@@ -1,0 +1,7 @@
+pathToDataXML = "F:\\Projects\\Data\\Данные по скважинам\\Динамограммы\\bd"
+pathToPickle = "F:\\Projects\\Data\\pickles"
+pathToPickleData = "F:\\Projects\\Data\\pickles\\Data"
+pathToDataFromXML = pathToPickle + "\\dataFromXML.pickle"
+pathToValuesSignals = pathToPickle + "\\valuesSignal.pickle"
+pathToAmountValuesInSignal = pathToPickle + "\\amountValuesInSignal.pickle"
+pathToMinMaxAmountValueInSignal = pathToPickle + "\\minMaxAmountValueInSignal.pickle"
