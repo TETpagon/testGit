@@ -24,3 +24,14 @@ def saveValuesSignalToPickle(valuesSignals: dict):
     for filename in valuesSignals:
         with open(config.pathToValuesSignals + "\\" + filename, "wb")as writeFile:
             pickle.dump(valuesSignals[filename], writeFile)
+
+
+def saveToPickle(path, data):
+    with open(path, "wb") as wr:
+        pickle.dump(data, wr)
+
+
+def openFromPickle(path):
+    with open(path, "rb") as r:
+        data = pickle.load(r)
+    return data
