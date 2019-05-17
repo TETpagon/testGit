@@ -1,13 +1,5 @@
-import json
-from pprint import pprint as pp
-import os
-import xmltodict
-import pickle
-
-from config import config
-from developTools import researchFilesSignals
 from developTools import toolsFile
-from RepositorySignals.RepositorySignals import RepositorySignals
+from Class.RepositorySignals import RepositorySignals
 
 if __name__ == "__main__":
     # dataFromXML = researchFilesSignals.getDataFromFilesSignals()
@@ -30,9 +22,14 @@ if __name__ == "__main__":
     # toolsFile.saveXmlFilesToPickle()
 
     repo = RepositorySignals()
+    values = {}
     for index in range(repo.getAmountSignal()):
         signal = repo.getNextSignal()
+        value = repo.getValuesSignal(signal)
+        if (value['fTickDuration'] or value['fTickDuration-Data']) and value['fAcceleration'] and value['fForce'] and \
+                value['fPosition']:
+            values['values-' + signal['filename']] = value
 
-
-
-
+        # if value['fAcceleration'] is not None and value['fForce'] is not None:
+        #     values['values-' + signal['filename']] = value
+    toolsFile.saveValuesSignalToPickle(values)

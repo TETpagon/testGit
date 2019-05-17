@@ -20,4 +20,7 @@ def saveXmlFilesToPickle():
             print("Обработано {} из {} файлов.".format(index, amountFiles))
 
 
-
+def saveValuesSignalToPickle(valuesSignals: dict):
+    for filename in valuesSignals:
+        with open(config.pathToValuesSignals + "\\" + filename, "wb")as writeFile:
+            pickle.dump(valuesSignals[filename], writeFile)
