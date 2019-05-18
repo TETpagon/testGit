@@ -1,7 +1,7 @@
 from pprint import pprint as pp
 
 from config import config
-from developTools import toolsFile, researchData
+from developTools import toolsFile, researchData, SOM
 from Class.RepositorySignals import RepositorySignals
 
 if __name__ == "__main__":
@@ -39,10 +39,19 @@ if __name__ == "__main__":
 
     # listDF = researchData.getSample()
     # toolsFile.saveToPickle(config.pathToPickle + "\\dinamos.pickle", listDF)
-    listDF = toolsFile.openFromPickle(config.pathToPickle + "\\dinamos.pickle")
     # researchData.PCA_castom(listDF)
+
+    listDF = toolsFile.openFromPickle(config.pathToPickle + "\\dinamos.pickle")
     listDF = researchData.convertDFTOArray(listDF)
+    # listDF = researchData.convertDFTOArray2D(listDF)
 
     # researchData.PCA(listDF)
     # researchData.TNSE(listDF)
-    researchData.spectr(listDF)
+    # researchData.DBSCAN(listDF)
+    # researchData.spectr(listDF)
+    # researchData.andrews(listDF)
+    # result = SOM.test_som_with_color_data(listDF)
+
+    # toolsFile.saveToPickle(config.pathToPickle+"\\som.pickle", result)
+    # som_W = toolsFile.openFromPickle(config.pathToPickle + "\\som.pickle")
+    # SOM.drawSom(som_W)

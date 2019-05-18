@@ -7,7 +7,7 @@ from config import config
 
 import numpy as np
 import matplotlib.pyplot as plt
-import seaborn as sns;
+import seaborn as sns
 
 sns.set(style='white')
 # %matplotlib inline
@@ -28,6 +28,8 @@ from sklearn.cluster import KMeans
 
 from scipy.cluster import hierarchy
 from scipy.spatial.distance import pdist
+
+from sklearn.cluster import dbscan
 
 
 def getSample():
@@ -73,8 +75,10 @@ def PCA(listDF: list):
     X_reduced = X_reduced.transpose()
 
     # И нарисуем получившиеся точки в нашем новом пространстве
-    plt.plot(X_reduced[0], X_reduced[1], 'bo')
-    plt.show()
+    plt.plot(X_reduced[1], X_reduced[0], 'bo')
+    plt.savefig(config.pathToData + '\\PCA.png', format='png', dpi=500)
+    plt.clf()
+    # plt.show()
 
 
 def drawDinamo(dinamo):
@@ -86,10 +90,27 @@ def convertDFTOArray(listDF):
     newList = []
 
     for df in listDF:
-        df = df.sample(577, replace=True)
-        array = df.values
+        dfNew = df.copy(True)
+        dfNew = dfNew.sample(577)
+        dfNew.sort_index()
+        array = dfNew.values
         array = array.ravel()
         newList.append(array)
+    return np.array(newList)
+
+
+def convertDFTOArray2D(listDF):
+    newList = []
+
+    for df in listDF:
+        dfNew = df.copy(True)
+        # dfNew = dfNew.sample(577)
+        dfNew = dfNew.loc[-577:]
+        dfNew.sort_index()
+        array = dfNew.values
+        # array = array.ravel()
+        newList += list(array)
+
     return np.array(newList)
 
 
@@ -100,7 +121,21 @@ def TNSE(data):
     X_tsne = X_tsne.transpose()
 
     plt.plot(X_tsne[0], X_tsne[1], 'bo')
-    plt.show()
+    plt.savefig(config.pathToData + '\\TNSE.png', format='png', dpi=500)
+    plt.clf()
+    # plt.show()
+
+
+def DBSCAN(listDF):
+    clustering, labels = dbscan(listDF, eps=10, min_samples=10)
+    tmp = []
+
+    for item in labels:
+        tmp.append(item)
+
+    df = pd.Series(tmp)
+    pp(df.unique())
+    # pp(len(labels))
 
 
 def qwe(listDF):
@@ -133,3 +168,39 @@ def spectr(listDF):
     plt.figure(figsize=(10, 5))
     dn = hierarchy.dendrogram(Z, color_threshold=0.5)
     plt.show()
+
+
+def andrews(listDF):
+    def andrews_curve(x, theta):
+        curve = list()
+        for th in theta:
+            x1 = x[0] / np.sqrt(2)
+            x2 = x[1] * np.sin(th)
+            x3 = x[2] * np.cos(th)
+            x4 = x[3] * np.sin(2. * th)
+            curve.append(x1 + x2 + x3 + x4)
+        return curve
+
+    accuracy = 1000
+    samples = listDF
+    theta = np.linspace(-np.pi, np.pi, accuracy)
+
+    # for s in samples[:595]:  # setosa
+    #     plt.plot(theta, andrews_curve(s, theta), 'r')
+    #
+    # for s in samples[595:1184]:  # versicolor
+    #     plt.plot(theta, andrews_curve(s, theta), 'g')
+
+    for s in samples[:10]:  # virginica
+        plt.plot(theta, andrews_curve(s, theta), 'b')
+
+    plt.xlim(-np.pi, np.pi)
+    plt.show()
+
+
+def test():
+    df = pd.DataFrame([1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
+    # pp(df)
+    df.copy(True)
+    df = df.sample(5)
+    pp(df.sort_index())
