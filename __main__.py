@@ -3,6 +3,7 @@ from pprint import pprint as pp
 from config import config
 from developTools import toolsFile, researchData, SOM
 from Class.RepositorySignals import RepositorySignals
+from Class.Sample import SampleAdapter
 
 if __name__ == "__main__":
     # dataFromXML = researchFilesSignals.getDataFromFilesSignals()
@@ -37,13 +38,31 @@ if __name__ == "__main__":
     #     #     values['values-' + signal['filename']] = value
     # toolsFile.saveValuesSignalToPickle(values)
 
-    # listDF = researchData.getSample()
-    # toolsFile.saveToPickle(config.pathToPickle + "\\dinamos.pickle", listDF)
-    # researchData.PCA_castom(listDF)
+    # listDF, dictDF = researchData.getSample()
 
-    listDF = toolsFile.openFromPickle(config.pathToPickle + "\\dinamos.pickle")
-    listDF = researchData.convertDFTOArray(listDF)
+    ####################################################################################################################
+
+    debitDict = toolsFile.getDebitWell()
+
+    # dictDF = toolsFile.getDinamos()
+    # toolsFile.saveToPickle(config.pathToPickle + "\\dinamos_DICT.pickle", dictDF)
+
+    dictDF = toolsFile.openFromPickle(config.pathToPickle + "\\dinamos_DICT.pickle")
+    sampleAdapter = SampleAdapter(dictDF=dictDF, debitDict=debitDict)
+    # sample = sampleAdapter.getByParts(2)
+    sample = sampleAdapter.getStateWell()
+
+    data_TNSE = researchData.TNSE(sample)
+    toolsFile.saveToPickle(config.pathToPickle + "\\TNSE_state.pickle", data_TNSE)
+
+    # data_TNSE = toolsFile.openFromPickle(config.pathToPickle + "\\TNSE_parts_2.pickle")
+    researchData.drawSemple(data_TNSE, path=config.pathToData + "\\TNSE_well.html", marker='marker_well')
+    researchData.drawSemple(data_TNSE, path=config.pathToData + "\\TNSE_state.html", marker='marker_state')
+
     # listDF = researchData.convertDFTOArray2D(listDF)
+    # listDF = researchData.convertDFTOArray64D_9(listDF)
+
+    # researchData.drawDinamo(listDF[0])
 
     # researchData.PCA(listDF)
     # researchData.TNSE(listDF)

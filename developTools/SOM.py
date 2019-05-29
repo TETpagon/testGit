@@ -4,9 +4,13 @@ import tensorflow as tf
 import matplotlib.pyplot as plt
 from pprint import pprint as pp
 
+from Class.Sample import SampleAdapter
+from config import config
+from developTools import toolsFile
+
 
 class SOMNetwork(object):
-    def __init__(self, input_dim, dim=10, sigma=None, learning_rate=0.01, tay2=10000, dtype=tf.float32):
+    def __init__(self, input_dim, dim=100, sigma=None, learning_rate=0.01, tay2=1151, dtype=tf.float32):
         if not sigma:
             sigma = dim / 2
         self.dtype = dtype
@@ -39,11 +43,11 @@ class SOMNetwork(object):
     def training_op(self):
         win_index = self.__competition('train_')
         with tf.name_scope('cooperation') as scope:
-            coop_dist = tf.sqrt(tf.reduce_sum(tf.square(tf.cast(self.positions -
-                                                                [win_index // self.dim,
-                                                                 win_index - win_index // self.dim * self.dim],
-                                                                dtype=self.dtype)), axis=1))
+            coop_dist = tf.sqrt(tf.reduce_sum(tf.square(
+                tf.cast(self.positions - [win_index // self.dim, win_index - win_index // self.dim * self.dim],
+                        dtype=self.dtype)), axis=1))
             sigma = tf.cond(self.n > 1000, lambda: self.minsigma, lambda: self.sigma * tf.exp(-self.n / self.tay1))
+            # sigma = tf.cond(self.n > 1000, lambda: self.minsigma, lambda: self.sigma * tf.exp(-1 / self.tay1))
             sigma_summary = tf.summary.scalar('Sigma', sigma)
             tnh = tf.exp(-tf.square(coop_dist) / (2 * tf.square(sigma)))  # topological neighbourhood
         with tf.name_scope('adaptation') as scope:
@@ -60,59 +64,154 @@ class SOMNetwork(object):
             distance = tf.sqrt(tf.reduce_sum(tf.square(self.x - self.w), axis=1))
         return tf.argmin(distance, axis=0)
 
+    def competition(self, info=''):
+        return self.__competition(info)
+
 
 # == Test SOM Network ==
 
-def drawSom(weight):
+def drawSom(weight, i):
     newWeight = np.zeros([len(weight), len(weight[0]), 3])
     for indexRow, row in enumerate(weight):
         for indexCol, cell in enumerate(row):
             newWeight[indexRow][indexCol] = (np.mean(cell), np.mean(cell), np.mean(cell))
 
-    minW = newWeight.min()
-    if minW < 0:
-        newWeight += -minW
-    else:
-        newWeight -= minW
-    maxW = newWeight.max()
-    newWeight = newWeight / maxW
-    minW = newWeight.min()
-    maxW = newWeight.max()
-    pp((minW, maxW))
+    # minW = newWeight.min()
+    # maxW = newWeight.max()
+    # pp((minW, maxW))
+    newWeight -= np.min(newWeight)
+    newWeight /= np.max(newWeight)
     plt.imshow(newWeight)
-    plt.show()
-
-
-def test_som_with_color_data(data):
-    # test_data = np.random.uniform(0, 1, (1000, 3))
-    test_data = data
-
-    som_dim = 100
-    som = SOMNetwork(input_dim=1154, dim=som_dim, dtype=tf.float64, sigma=3, learning_rate=0.0000000000000001, tay2=1,)
-    training_op, lr_summary, sigma_summary = som.training_op()
-    init = tf.global_variables_initializer()
-    # writer = tf.summary.FileWriter('./logs/', tf.get_default_graph())
-    with tf.Session() as sess:
-        init.run()
-        # img1 = tf.reshape(som.w, [som_dim, som_dim, -1]).eval()
-        # plt.figure(1)
-        # plt.subplot(121)
-        # plt.imshow(img1)
-        start = time.time()
-        for i, color_data in enumerate(test_data):
-            if i % 1 == 0:
-                print('iter:{}/{}'.format(i, len(test_data)))
-                img2 = tf.reshape(som.w, [som_dim, som_dim, -1]).eval()
-                drawSom(img2)
-            sess.run(training_op, feed_dict={som.x: color_data, som.n: i})
-        end = time.time()
-        print(end - start)
-        img2 = tf.reshape(som.w, [som_dim, som_dim, -1]).eval()
-
-        return img2
-        # plt.subplot(122)
-        # plt.imshow(img2)
-    # writer.close()
+    plt.savefig(config.pathToData + '\\SOM\\som__' + str(i) + '.png', format='png', dpi=500)
+    plt.clf()
     # plt.show()
 
-# test_som_with_color_data()
+
+def test_som_with_color_data(data, dim):
+    # test_data = np.random.uniform(0, 1, (1000, 3))
+    test_data = data.copy(True)
+    test_data = test_data.drop(['marker'], axis=1)
+    values = test_data.values
+    values = values - np.min(values)
+    values = values / np.max(values) * 2 - 1
+    test_data = values
+    som_dim = dim
+    som = SOMNetwork(input_dim=len(test_data[0]), dim=som_dim, dtype=tf.float64, learning_rate=0.1, tay2=len(data))
+    training_op, lr_summary, sigma_summary = som.training_op()
+    init = tf.global_variables_initializer()
+    with tf.Session() as sess:
+        init.run()
+        start = time.time()
+        amount = len(test_data)
+        ciuntI = 300
+        for i, color_data in enumerate(test_data):
+            sess.run(training_op, feed_dict={som.x: color_data, som.n: i})
+            if i % ciuntI == 0:
+                print('iter:{}/{}'.format(i, amount))
+                img2 = tf.reshape(som.w, [som_dim, som_dim, -1]).eval()
+                drawSom(img2, i)
+                end = time.time()
+                print(((end - start) / ciuntI) * (amount - i) / 60)
+                start = time.time()
+        img2 = tf.reshape(som.w, [som_dim, som_dim, -1]).eval()
+        drawSom(img2, i)
+        img2 = som.w.eval()
+        toolsFile.saveToPickle(config.pathToPickle + "\\som_contrib.pickle", img2)
+        return img2
+
+
+if __name__ == "__main__":
+    def feed(x):
+        # pp(w.shape)
+        r = int(np.sqrt(w.shape[0]))
+        we = np.linalg.norm(np.sqrt(np.square(w - x)), axis=1)
+        index = np.argmin(we)
+        i, j = divmod(index, r)
+        return i, j
+
+
+    def norm(drawArray):
+        # pp('-' * 150)
+        ww = np.copy(drawArray)
+        www = np.reshape(ww, (-1, 3))
+        amounts = [1, 1, 1]
+        for i, c in enumerate(www):
+            if c[0] > amounts[0]:
+                amounts[0] = c[0]
+            if c[1] > amounts[1]:
+                amounts[1] = c[1]
+            if c[2] > amounts[2]:
+                amounts[2] = c[2]
+        # pp(np.min(ww))
+        pp(amounts)
+        for r in ww:
+            for c in r:
+                if c[0] > 0:
+                    c[0] = c[0] / amounts[0] / 3 + 0.66
+                if c[1] > 0:
+                    c[1] = c[1] / amounts[1] / 3 + 0.66
+                if c[2] > 0:
+                    c[2] = c[2] / amounts[2] / 3 + 0.66
+        # pp(np.min(ww))
+        return np.copy(ww)
+
+
+    dim = 350
+    dictDF = toolsFile.openFromPickle(config.pathToPickle + "\\dinamos_DICT.pickle")
+    sampleAdapter = SampleAdapter(dictDF=dictDF)
+    sample = sampleAdapter.getStateWell()
+    # sample = sampleAdapter.getByWell()
+    # sample = sampleAdapter.getByParts(2)
+
+    pp(sample['marker'].value_counts())
+
+    # w = test_som_with_color_data(sample.sample(len(sample)), dim)
+    # sample = sample.sample(len(sample))
+    # sample = sample.reset_index(drop=True)
+    w = toolsFile.openFromPickle(config.pathToPickle + "\\som_contrib.pickle")
+
+    # colors = {
+    #     'Скважина 15795': (1, 0, 0),
+    #     'Скважина 18073': (0, 1, 0),
+    #     'Скважина 30065': (0, 0, 1),
+    # }
+    colors = {
+        'bad': (1, 0, 0),
+        'good': (0, 1, 0),
+    }
+    # colors = [
+    #     (1, 0, 0),
+    #     (0, 1, 0),
+    # ]
+
+    marker = sample['marker']
+    test_data = sample.copy(True)
+    test_data = test_data.drop(['marker'], axis=1)
+    values = test_data.values
+    values = values - np.min(values)
+    values = values / np.max(values) * 2 - 1
+    sample = values
+    drawArray = np.full((dim, dim, 3), 0.)
+    amount = len(sample)
+    for index, x in enumerate(sample[::]):
+        i, j = feed(x)
+        drawArray[i, j] += colors[marker[index]]
+        if index % 100 == 0:
+            pp('Пройдено {} из {}'.format(index, amount))
+            # pp(drawArray)
+            # drawArray -= np.min(drawArray)
+            # pp(drawArray)
+            # drawArray /= np.max(drawArray)
+            # for i, row in enumerate(drawArray):
+            #     for j, cell in enumerate(row):
+            #         plt.scatter(i, j, s=10, c=(cell, cell, cell), marker="o")
+            #     pp(i)
+            # drawArray = drawArray / np.max(drawArray)
+            newDrawArray = norm(drawArray)
+            plt.imshow(newDrawArray)
+            plt.savefig(config.pathToData + '\\som_state_{}.png'.format(dim), format='png', dpi=500)
+            plt.clf()
+    newDrawArray = norm(drawArray)
+    plt.imshow(newDrawArray)
+    plt.savefig(config.pathToData + '\\som_state_{}.png'.format(dim), format='png', dpi=500)
+    plt.clf()

@@ -31,8 +31,10 @@ def getDebit():
     februaly_well_30065 = februaly_well_30065.reset_index()[['date', 'time', 'time_interval', 'debit']]
     # pd.DataFrame.sort_values(ascending=)
 
-    return {'well_15795': februaly_well_15795, 'well_18073': februaly_well_18073, 'well_30065': februaly_well_30065}
+    return {'Скважина 15795': februaly_well_15795, 'Скважина 18073': februaly_well_18073,
+            'Скважина 30065': februaly_well_30065}
 
 
 if __name__ == "__main__":
-    listDebit = getDebit()
+    dictDebit = getDebit()
+    pp(dictDebit)

@@ -2,8 +2,10 @@ import os
 from pprint import pprint as pp
 
 import pandas as pd
+from datetime import datetime
 
 from config import config
+from developTools import createSemple
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -31,29 +33,50 @@ from scipy.spatial.distance import pdist
 
 from sklearn.cluster import dbscan
 
+import plotly.plotly as py
+import plotly.graph_objs as go
+import plotly
+
 
 def getSample():
     dataFromStorage = getDataFromFiles()
     return dataFromStorage
 
 
-def getDataFromFiles():
-    data = []
+def getDebitByDateTime(well_oil, well, date, time):
+    pp((well, date, time))
+    dateDinamo = datetime.strptime(date, "%d-%m-%y")
+    timeDinamo = datetime.strptime(time, "%H-%M")
+    # dateDebit = datetime.strptime()
+    ckeckDate = (str(dateDinamo.date().day) if len(str(dateDinamo.date().day)) > 2 else "0" + str(
+        dateDinamo.date().day)) + "." + (
+                    str(dateDinamo.date().month) if len(str(dateDinamo.date().month)) > 2 else "0" + str(
+                        dateDinamo.date().month)) + "." + str(dateDinamo.year)[2:]
+    dfDate = well_oil[well][well_oil[well]['date'] == ckeckDate]
 
+
+def getDataFromFiles():
+    dataList = []
+    dataDict = {}
+    # well_oil = createSemple.getDebit()
     for dir in os.listdir(config.pathToDirOilsWell):
         pathToDate = config.pathToDirOilsWell + "\\" + dir
+        dataDict[dir] = {}
         for date in os.listdir(pathToDate):
             pathToFiles = pathToDate + "\\" + date
+            dataDict[dir][date] = {}
             for filename in os.listdir(pathToFiles):
                 pathToFile = pathToFiles + "\\" + filename
                 df = pd.read_csv(pathToFile, sep=";")
                 if df.dtypes["force" and "position"] != 'object':
+                    # getDebitByDateTime(well_oil, dir, date, filename[:-4])
                     dfs = preprocessData(df)
-                    data += dfs
-                # break
-            # break
-        # break
-    return data
+                    dataDict[dir][date][filename[:-4]] = dfs
+                    dataList += dfs
+                    break
+            break
+        break
+    return dataList, dataDict
 
 
 def preprocessData(df: pd.DataFrame):
@@ -86,44 +109,35 @@ def drawDinamo(dinamo):
     plt.show()
 
 
-def convertDFTOArray(listDF):
+def convertDFTOArray(listDF, part_in=9):
     newList = []
+    if 576 % part_in == 0:
+        part = part_in
+    else:
+        part = 9
+    pp("part: {}".format(part))
 
     for df in listDF:
         dfNew = df.copy(True)
-        dfNew = dfNew.sample(577)
+        start = len(dfNew) - 576
+        dfNew = dfNew.loc[start:]
         dfNew.sort_index()
         array = dfNew.values
         array = array.ravel()
-        newList.append(array)
+        newarray = [{'part': part, 'values': item} for part, item in enumerate(np.split(array, part))]
+        newList += list(newarray)
+        # break
     return np.array(newList)
 
 
-def convertDFTOArray2D(listDF):
-    newList = []
-
-    for df in listDF:
-        dfNew = df.copy(True)
-        # dfNew = dfNew.sample(577)
-        dfNew = dfNew.loc[-577:]
-        dfNew.sort_index()
-        array = dfNew.values
-        # array = array.ravel()
-        newList += list(array)
-
-    return np.array(newList)
-
-
-def TNSE(data):
+def TNSE(data: pd.DataFrame):
     tsne = TSNE()
-
-    X_tsne = tsne.fit_transform(data)
-    X_tsne = X_tsne.transpose()
-
-    plt.plot(X_tsne[0], X_tsne[1], 'bo')
-    plt.savefig(config.pathToData + '\\TNSE.png', format='png', dpi=500)
-    plt.clf()
-    # plt.show()
+    markers = data[['marker-well', 'marker_state']].copy(True)
+    inputData = data.drop(['marker'], axis=1)
+    X_tsne = tsne.fit_transform(inputData)
+    result = pd.DataFrame(X_tsne)
+    result[['marker-well', 'marker_state']] = markers
+    return result
 
 
 def DBSCAN(listDF):
@@ -204,3 +218,33 @@ def test():
     df.copy(True)
     df = df.sample(5)
     pp(df.sort_index())
+
+
+def drawSemple(sample: pd.DataFrame, path='semple.html', marker="marker_well"):
+    markers = sample[marker].unique()
+    traces = []
+    for marker in markers:
+        traces.append(
+            go.Scatter(
+                x=sample.loc[sample[marker] == marker][0],
+                y=sample.loc[sample[marker] == marker][1],
+                name=str(marker),
+                mode='markers',
+                marker=dict(
+                    size=7,
+                    color='rgb(' + ",".join(
+                        [str(random.randint(0, 255)), str(random.randint(0, 255)), str(random.randint(0, 255))]) + ')',
+                    line=dict(
+                        width=2,
+                        color='rgb(0, 0, 0)'
+                    )
+                )
+            )
+        )
+
+    layout = dict(title='Динамограммы',
+                  yaxis=dict(zeroline=False),
+                  xaxis=dict(zeroline=False)
+                  )
+    fig = dict(data=traces, layout=layout)
+    plotly.offline.plot(fig, filename=path)
