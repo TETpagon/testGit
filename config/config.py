@@ -15,6 +15,8 @@ pathToMinMaxAmountValueInSignal = pathToPickle + "\\minMaxAmountValueInSignal.pi
 
 # ----------------------------------Данные в CSV--------------------------------------------------------------
 pathToDirOilsWell = "F:\\Projects\\Data\\Данные по скважинам\\все Динамограммы"
+pathToDirOilsWellOrder = "F:\\Projects\\Data\\Данные по скважинам\\отсортированные отформатированные Динамограммы"
+pathToDirOilsWellDebit = "F:\\Projects\\Data\\Данные по скважинам\\дебит Динамограммы"
 pathToDirOilWell_15795 = pathToDirOilsWell + "\\Скважина 15795"
 pathToDirOilWell_18073 = pathToDirOilsWell + "\\Скважина 18073"
 pathToDirOilWell_30065 = pathToDirOilsWell + "\\Скважина 30065"

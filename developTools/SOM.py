@@ -90,7 +90,9 @@ def drawSom(weight, i):
 def test_som_with_color_data(data, dim):
     # test_data = np.random.uniform(0, 1, (1000, 3))
     test_data = data.copy(True)
-    test_data = test_data.drop(['marker'], axis=1)
+    test_data = test_data.drop(['marker_debit'], axis=1)
+    # test_data = test_data.drop(['marker_well'], axis=1)
+    # test_data = test_data.drop(['marker_state'], axis=1)
     values = test_data.values
     values = values - np.min(values)
     values = values / np.max(values) * 2 - 1
@@ -116,7 +118,7 @@ def test_som_with_color_data(data, dim):
         img2 = tf.reshape(som.w, [som_dim, som_dim, -1]).eval()
         drawSom(img2, i)
         img2 = som.w.eval()
-        toolsFile.saveToPickle(config.pathToPickle + "\\som_contrib.pickle", img2)
+        toolsFile.saveToPickle(config.pathToPickle + "\\som_debit_norm_{}.pickle".format(dim), img2)
         return img2
 
 
@@ -147,46 +149,52 @@ if __name__ == "__main__":
         for r in ww:
             for c in r:
                 if c[0] > 0:
-                    c[0] = c[0] / amounts[0] / 3 + 0.66
+                    c[0] = c[0] / amounts[0] / 2 + 0.5
                 if c[1] > 0:
-                    c[1] = c[1] / amounts[1] / 3 + 0.66
+                    c[1] = c[1] / amounts[1] / 2 + 0.5
                 if c[2] > 0:
-                    c[2] = c[2] / amounts[2] / 3 + 0.66
+                    c[2] = c[2] / amounts[2] / 2 + 0.5
         # pp(np.min(ww))
         return np.copy(ww)
 
 
-    dim = 350
-    dictDF = toolsFile.openFromPickle(config.pathToPickle + "\\dinamos_DICT.pickle")
-    sampleAdapter = SampleAdapter(dictDF=dictDF)
-    sample = sampleAdapter.getStateWell()
+    dim = 100
+    dictDF = toolsFile.openFromPickle(config.pathToPickle + "\\dinamos_debit_DICT.pickle")
+    debitDict = toolsFile.getDebitWell()
+
+    sampleAdapter = SampleAdapter(dictDF=dictDF, debitDict=debitDict)
     # sample = sampleAdapter.getByWell()
+    # sample = sampleAdapter.getByWellNorm()
+    sample = sampleAdapter.getByDebitNorm()
     # sample = sampleAdapter.getByParts(2)
 
-    pp(sample['marker'].value_counts())
+    # pp(sample['marker_debit'].value_counts())
+    # pp(sample['marker_well'].value_counts())
+    # pp(sample['marker_state'].value_counts())
 
     # w = test_som_with_color_data(sample.sample(len(sample)), dim)
     # sample = sample.sample(len(sample))
     # sample = sample.reset_index(drop=True)
-    w = toolsFile.openFromPickle(config.pathToPickle + "\\som_contrib.pickle")
+    w = toolsFile.openFromPickle(config.pathToPickle + "\\som_debit_norm_{}.pickle".format(dim))
 
     # colors = {
-    #     'Скважина 15795': (1, 0, 0),
-    #     'Скважина 18073': (0, 1, 0),
-    #     'Скважина 30065': (0, 0, 1),
+    #     'marker_well': {
+    #         'Скважина 15795': (1, 0, 0),
+    #         'Скважина 18073': (0, 1, 0),
+    #         'Скважина 30065': (0, 0, 1),
+    #     },
+    #     'marker_state': {
+    #         'bad': (1, 0, 0),
+    #         'good': (0, 1, 0),
+    #     }
     # }
-    colors = {
-        'bad': (1, 0, 0),
-        'good': (0, 1, 0),
-    }
-    # colors = [
-    #     (1, 0, 0),
-    #     (0, 1, 0),
-    # ]
+    marker = sample[['marker_debit']]
 
-    marker = sample['marker']
+    colors = marker - np.min(marker)
+    colors = colors / np.max(colors)
     test_data = sample.copy(True)
-    test_data = test_data.drop(['marker'], axis=1)
+    test_data = test_data.drop(['marker_debit'], axis=1)
+    # test_data = test_data.drop(['marker_state'], axis=1)
     values = test_data.values
     values = values - np.min(values)
     values = values / np.max(values) * 2 - 1
@@ -195,7 +203,7 @@ if __name__ == "__main__":
     amount = len(sample)
     for index, x in enumerate(sample[::]):
         i, j = feed(x)
-        drawArray[i, j] += colors[marker[index]]
+        drawArray[i, j] = (colors.loc[index], 0, 0)
         if index % 100 == 0:
             pp('Пройдено {} из {}'.format(index, amount))
             # pp(drawArray)
@@ -207,11 +215,11 @@ if __name__ == "__main__":
             #         plt.scatter(i, j, s=10, c=(cell, cell, cell), marker="o")
             #     pp(i)
             # drawArray = drawArray / np.max(drawArray)
-            newDrawArray = norm(drawArray)
-            plt.imshow(newDrawArray)
-            plt.savefig(config.pathToData + '\\som_state_{}.png'.format(dim), format='png', dpi=500)
+            # newDrawArray = norm(drawArray)
+            plt.imshow(drawArray)
+            plt.savefig(config.pathToData + '\\som_well_norm_{}.png'.format(dim), format='png', dpi=500)
             plt.clf()
     newDrawArray = norm(drawArray)
     plt.imshow(newDrawArray)
-    plt.savefig(config.pathToData + '\\som_state_{}.png'.format(dim), format='png', dpi=500)
+    plt.savefig(config.pathToData + '\\som_well_norm_{}.png'.format(dim), format='png', dpi=500)
     plt.clf()

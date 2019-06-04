@@ -104,9 +104,14 @@ def PCA(listDF: list):
     # plt.show()
 
 
-def drawDinamo(dinamo):
-    plt.plot(dinamo["position"], dinamo["force"], 'b')
+def drawDinamo(dinamo:pd.DataFrame):
+    array = dinamo.values
+    plt.plot(array[1::2], array[0:-1:2], 'b')
     plt.show()
+
+#def drawDinamo(dinamo):
+#     plt.plot(dinamo["position"], dinamo["force"], 'b')
+#     plt.show()
 
 
 def convertDFTOArray(listDF, part_in=9):
@@ -131,12 +136,20 @@ def convertDFTOArray(listDF, part_in=9):
 
 
 def TNSE(data: pd.DataFrame):
+    # tsne = TSNE()
+    # markers = data[['marker_well', 'marker_state']].copy(True)
+    # inputData = data.drop(['marker_well'], axis=1)
+    # inputData = inputData.drop(['marker_state'], axis=1)
+    # X_tsne = tsne.fit_transform(inputData)
+    # result = pd.DataFrame(X_tsne)
+    # result[['marker_well', 'marker_state']] = markers
+    # return result
     tsne = TSNE()
-    markers = data[['marker-well', 'marker_state']].copy(True)
-    inputData = data.drop(['marker'], axis=1)
+    markers = data[['marker_debit']].copy(True)
+    inputData = data.drop(['marker_debit'], axis=1)
     X_tsne = tsne.fit_transform(inputData)
     result = pd.DataFrame(X_tsne)
-    result[['marker-well', 'marker_state']] = markers
+    result[['marker_debit']] = markers
     return result
 
 
@@ -220,20 +233,27 @@ def test():
     pp(df.sort_index())
 
 
-def drawSemple(sample: pd.DataFrame, path='semple.html', marker="marker_well"):
-    markers = sample[marker].unique()
+def drawSemple(sample: pd.DataFrame, path='semple.html', marker_in="marker_well"):
+    markers = sample[marker_in].unique()
+    sampleCP = sample.copy(True)
+    sampleCP[marker_in] = sampleCP[marker_in] - np.min(sampleCP[marker_in])
+    sampleCP[marker_in] = sampleCP[marker_in] / np.max(sampleCP[marker_in])
+    colors = markers - np.min(markers)
+    colors = colors / np.max(colors) * 255
+    colors = np.array(colors, dtype=int)
     traces = []
-    for marker in markers:
+    for index, marker in enumerate(markers):
         traces.append(
             go.Scatter(
-                x=sample.loc[sample[marker] == marker][0],
-                y=sample.loc[sample[marker] == marker][1],
+                x=sample.loc[sample[marker_in] == marker][0],
+                y=sample.loc[sample[marker_in] == marker][1],
                 name=str(marker),
                 mode='markers',
                 marker=dict(
-                    size=7,
+                    size=10,
                     color='rgb(' + ",".join(
-                        [str(random.randint(0, 255)), str(random.randint(0, 255)), str(random.randint(0, 255))]) + ')',
+                        # [str(random.randint(0, 255)), str(random.randint(0, 255)), str(random.randint(0, 255))]) + ')',
+                        [str(colors[index]), str(0), str(0)]) + ')',
                     line=dict(
                         width=2,
                         color='rgb(0, 0, 0)'

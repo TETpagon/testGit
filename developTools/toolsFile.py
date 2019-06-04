@@ -1,9 +1,15 @@
+from io import StringIO
+
+import chardet
 import xmltodict
 import json
 import pickle
 import os
 import pandas as pd
 from pprint import pprint as pp
+from datetime import datetime
+from copy import deepcopy
+import shutil
 
 import re
 
@@ -46,6 +52,24 @@ def getDinamos():
     return dinamos
 
 
+def getDinamosDebit():
+    dinamos = {}
+    dataCSV = getDinamosFromCSV(config.pathToDirOilsWellOrder)
+    for well in dataCSV:
+        dinamos[well] = {}
+        for date in dataCSV[well]:
+            dinamos[well][date] = {}
+            for time in dataCSV[well][date]:
+                df = dataCSV[well][date][time]
+                if df.dtypes["force" and "position"] != 'object':
+                    dinamosValues = getDinamosValues(df)
+                    dinamos[well][date][time] = dinamosValues
+                # else:
+                #     pp("{}   {}".format(well, date))
+
+    return dinamos
+
+
 def getDinamosValues(df: pd.DataFrame):
     newDF = df.loc[~df['force'].isnull()].reset_index()
     newDF = newDF[['index', 'force', 'position']]
@@ -59,20 +83,31 @@ def getDinamosValues(df: pd.DataFrame):
     return dinamos
 
 
-def getDinamosFromCSV():
+def getDinamosFromCSV(path=config.pathToDirOilsWell):
     data = {}
-    for dirOilWell in os.listdir(config.pathToDirOilsWell):
+    for dirOilWell in os.listdir(path):
         data[dirOilWell] = {}
-        pathToDateDirs = config.pathToDirOilsWell + "\\" + dirOilWell
+        pathToDateDirs = path + "\\" + dirOilWell
         dateDirs = os.listdir(pathToDateDirs)
         for dateDir in dateDirs:
             data[dirOilWell][dateDir] = {}
             pathToDinamos = pathToDateDirs + "\\" + dateDir
             dinamosCSV = os.listdir(pathToDinamos)
             for dinamo in dinamosCSV:
-                pathToDinamoCSV = pathToDinamos + "\\" + dinamo
-                df = pd.read_csv(pathToDinamoCSV, sep=";")
-                data[dirOilWell][dateDir][dinamo[:-4]] = df
+                try:
+                    pathToDinamoCSV = pathToDinamos + "\\" + dinamo
+                    with open(pathToDinamoCSV, "r") as file:
+                        dataCSV = file.read()
+                    df = pd.read_csv(StringIO(dataCSV), sep=";")
+                    data[dirOilWell][dateDir][dinamo[:-4]] = df
+                except Exception as ex:
+                    with open(pathToDinamos + "\\" + dinamo, "rb") as file:
+                        date = file.read()
+                        result = chardet.detect(date)
+                        charenc = result['encoding']
+                        pp(charenc)
+                    pp(pathToDinamos + "\\" + dinamo)
+                    raise ex
     return data
 
 
@@ -113,5 +148,109 @@ def openFromPickle(path):
     return data
 
 
+def createSempleDebit():
+    pathToWell = config.pathToDirOilsWell
+    wells = os.listdir(pathToWell)
+    fileDateTime = {}
+    for well in wells:
+        fileDateTime[well] = {}
+        pathToDate = pathToWell + "\\" + well
+        dates = os.listdir(pathToDate)
+        for date in dates:
+            fileDateTime[well][date] = {}
+            pathToTime = pathToDate + "\\" + date
+            times = os.listdir(pathToTime)
+            for file in times:
+                pathToFile = pathToTime + "\\" + file
+                fileDateTime[well][date][file] = os.stat(pathToFile).st_mtime
+
+    sortFile = {}
+    for well in fileDateTime:
+        sortFile[well] = {}
+        for date in fileDateTime[well]:
+            sortFile[well][date] = {}
+            x = deepcopy(fileDateTime[well][date])
+            sorted_x = sorted(x.items(), key=lambda kv: kv[1])
+            for index, item in enumerate(sorted_x):
+                sortFile[well][date][item[0]] = index
+
+    resultFile = {}
+
+    for well in wells:
+        resultFile[well] = {}
+        pathToDate = pathToWell + "\\" + well
+        if not os.path.exists(pathToDate.replace('все Динамограммы', 'отсортированные Динамограммы')):
+            os.mkdir(pathToDate.replace('все Динамограммы', 'отсортированные Динамограммы'))
+        dates = os.listdir(pathToDate)
+        for date in dates:
+            resultFile[well][date] = {}
+            pathToTime = pathToDate + "\\" + date
+            if not os.path.exists(pathToTime.replace('все Динамограммы', 'отсортированные Динамограммы')):
+                os.mkdir(pathToTime.replace('все Динамограммы', 'отсортированные Динамограммы'))
+            times = os.listdir(pathToTime)
+            for file in times:
+                pathToFile = pathToTime + "\\" + file
+                pathMove = pathToTime
+                pathMove = pathMove.replace('все Динамограммы', 'отсортированные Динамограммы')
+                index = sortFile[well][date][file]
+                index = str(index) if index // 10 != 0 else '0' + str(index)
+                pathMove = pathMove + "\\{}_".format(index) + file
+                shutil.copy2(pathToFile, pathMove)
+
+    pathToWell = 'F:\\Projects\\Data\\Данные по скважинам\\отсортированные Динамограммы'
+    wells = os.listdir(pathToWell)
+
+    for well in wells:
+        resultFile[well] = {}
+        pathToDate = pathToWell + "\\" + well
+        if not os.path.exists(
+                pathToDate.replace('отсортированные Динамограммы', 'отсортированные отформатированные Динамограммы')):
+            os.mkdir(
+                pathToDate.replace('отсортированные Динамограммы', 'отсортированные отформатированные Динамограммы'))
+        dates = os.listdir(pathToDate)
+        for date in dates:
+            base = ''
+            resultFile[well][date] = {}
+            pathToTime = pathToDate + "\\" + date
+            if not os.path.exists(pathToTime.replace('отсортированные Динамограммы',
+                                                     'отсортированные отформатированные Динамограммы')):
+                os.mkdir(pathToTime.replace('отсортированные Динамограммы',
+                                            'отсортированные отформатированные Динамограммы'))
+            times = os.listdir(pathToTime)
+            for file in times:
+                pathToFile = pathToTime + "\\" + file
+                pathMove = pathToTime
+                pathMove = pathMove.replace('отсортированные Динамограммы',
+                                            'отсортированные отформатированные Динамограммы')
+                base, newfile = norm(base, file)
+                pathMove = pathMove + "\\" + newfile
+                shutil.copy2(pathToFile, pathMove)
+
+
+def norm(base, file):
+    newbase = file
+    newfile = file
+    if 'signal' in file and 'signal' not in base and base != '':
+        try:
+            parts = base.split("_")
+            parts = parts[1].split(".")
+            ex = parts[1]
+            time = parts[0].split("-")
+            h = int(time[0]) + 1
+            # pp((base, file, h))
+            h = 0 if h >= 24 else h
+            h = str(h) if h // 10 != 0 else '0' + str(h)
+            index = file.split("_")[0]
+            newfile = "{}_{}-{}.{}".format(index, str(h), time[1], ex)
+            newbase = newfile
+
+        except Exception as ex:
+            pp(base)
+            pp(file)
+            raise ex
+
+    return newbase, newfile
+
+
 if __name__ == "__main__":
-    pass
+    createSempleDebit()
