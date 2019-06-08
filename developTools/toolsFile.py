@@ -38,6 +38,7 @@ def saveValuesSignalToPickle(valuesSignals: dict):
 
 
 def getDinamos():
+    data = pd.DataFrame()
     dinamos = {}
     dataCSV = getDinamosFromCSV()
     for well in dataCSV:
@@ -48,7 +49,13 @@ def getDinamos():
                 df = dataCSV[well][date][time]
                 if df.dtypes["force" and "position"] != 'object':
                     dinamosValues = getDinamosValues(df)
+                    for dinamo in dinamosValues:
+                        data = data.append(pd.DataFrame(dinamo.values.reshape(-1))[:1154].transpose())
+                        # pp(data.describe(include='all'))
+                        # input('step')
                     dinamos[well][date][time] = dinamosValues
+    # nans = data.loc[:, data.isnull().any()].copy()
+    pp(len(data))
     return dinamos
 
 
@@ -64,9 +71,6 @@ def getDinamosDebit():
                 if df.dtypes["force" and "position"] != 'object':
                     dinamosValues = getDinamosValues(df)
                     dinamos[well][date][time] = dinamosValues
-                # else:
-                #     pp("{}   {}".format(well, date))
-
     return dinamos
 
 
@@ -96,6 +100,7 @@ def getDinamosFromCSV(path=config.pathToDirOilsWell):
             for dinamo in dinamosCSV:
                 try:
                     pathToDinamoCSV = pathToDinamos + "\\" + dinamo
+
                     with open(pathToDinamoCSV, "r") as file:
                         dataCSV = file.read()
                     df = pd.read_csv(StringIO(dataCSV), sep=";")

@@ -1,3 +1,4 @@
+import copy
 import os
 from pprint import pprint as pp
 
@@ -104,12 +105,13 @@ def PCA(listDF: list):
     # plt.show()
 
 
-def drawDinamo(dinamo:pd.DataFrame):
+def drawDinamo(dinamo: pd.DataFrame):
     array = dinamo.values
     plt.plot(array[1::2], array[0:-1:2], 'b')
     plt.show()
 
-#def drawDinamo(dinamo):
+
+# def drawDinamo(dinamo):
 #     plt.plot(dinamo["position"], dinamo["force"], 'b')
 #     plt.show()
 
@@ -268,3 +270,51 @@ def drawSemple(sample: pd.DataFrame, path='semple.html', marker_in="marker_well"
                   )
     fig = dict(data=traces, layout=layout)
     plotly.offline.plot(fig, filename=path)
+
+
+def analizeFeatureInput(featureInput, sample):
+    array = np.array(featureInput)
+    tmp = copy.deepcopy(featureInput)
+    result = []
+    for i in range(1):
+        result.append(tmp.pop(np.argmax(tmp)))
+
+    indexes = []
+    # result = np.array(result)
+    for item in result:
+        indexes.append(np.where(array == item)[0][0])
+
+    indexes = sorted(indexes)
+    pp(indexes)
+    # pp(len(indexes))
+    plt.plot(result, 'b')
+    plt.show()
+
+    positionX = []
+    positionY = []
+
+    for index in indexes:
+        if index % 2 == 0:
+            if index not in positionX:
+                positionX.append(index)
+            if index + 1 not in positionY:
+                positionY.append(index + 1)
+        else:
+            if index - 1 not in positionX:
+                positionX.append(index - 1)
+            if index not in positionY:
+                positionY.append(index)
+    pp(len(positionX))
+    pp(len(positionY))
+
+    sample_loc = sample.copy(True)
+
+    marker = sample_loc.pop("marker_debit")
+
+
+    plt.plot(sample_loc.mean().values[1::2], sample_loc.mean().values[0::2], "b")
+    plt.plot(sample_loc.mean().values[positionY], sample_loc.mean().values[positionX], "ro")
+    plt.show()
+
+    # for x, y in zip(positionX, positionY):
+    #     pp((x, y))

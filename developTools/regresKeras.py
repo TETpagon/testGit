@@ -14,9 +14,9 @@ from developTools import toolsFile
 if __name__ == "__main__":
     debitDict = toolsFile.getDebitWell()
 
-    dictDF = toolsFile.openFromPickle(config.pathToPickle + "\\dinamos_debit_DICT.pickle")
+    dictDF = toolsFile.openFromPickle(config.pathToPickle + "\\dinamos_debit_.pickle")
     sampleAdapter = SampleAdapter(dictDF=dictDF, debitDict=debitDict)
-    sample = sampleAdapter.getByDebitNormMean()
+    sample = sampleAdapter.getByDebitNorm()
 
     train_dataset = sample.sample(frac=0.8, random_state=0)
     test_dataset = sample.drop(train_dataset.index)
@@ -30,7 +30,7 @@ if __name__ == "__main__":
 
         # pp(isinstance(tf.keras.layers.Dense(1), tf.layers.Layer))
 
-        model.add(tf.keras.layers.Dense(512, activation=tf.nn.relu, input_shape=[len(train_dataset.keys())]))
+        model.add(tf.keras.layers.Dense(64, activation=tf.nn.relu, input_shape=[len(train_dataset.keys())]))
         model.add(tf.keras.layers.Dense(1))
 
         optimizer = tf.train.RMSPropOptimizer(0.001)
@@ -110,7 +110,7 @@ if __name__ == "__main__":
     # plt.show()
     error = abs(test_predictions - test_labels)
 
-    print('Min Absolute Error:', np.min(error), 'degrees.')
-    print('Max Absolute Error:', np.max(error), 'degrees.')
-    print('Mean Absolute Error:', np.mean(error), 'degrees.')
-    print('Std Absolute Error:', np.std(error), 'degrees.')
+    print('Минимальная ошибка:', np.min(error))
+    print('Максимальная ошибка:', np.max(error))
+    print('Средняя ошибка:', np.mean(error))
+    # print('стреднеквадратичное откланеие по всем прогнозам:', np.std(errors))

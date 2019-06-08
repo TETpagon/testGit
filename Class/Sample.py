@@ -72,7 +72,6 @@ class SampleAdapter(object):
         return resultDebit
 
     def getByDebitNorm(self):
-        part = 2
         count = 0
         resultDinamos = pn.DataFrame()
         for well in self.dictDF:
@@ -102,23 +101,24 @@ class SampleAdapter(object):
         marker = resultDinamos['marker_debit']
         resultDinamos = resultDinamos.drop(['marker_debit'], axis=1)
 
-        array2 = resultDinamos[resultDinamos.columns[1::2]].values
-
-        meanA = np.mean(array2)
-        stdA = np.std(array2)
-        array2 -= meanA
-        array2 /= stdA
-
-        array1 = resultDinamos[resultDinamos.columns[0::2]].values
+        array1 = resultDinamos[resultDinamos.columns[0::2]]
 
         meanA = np.mean(array1)
         stdA = np.std(array1)
         array1 -= meanA
         array1 /= stdA
 
-        resultDinamos = pn.DataFrame(array1)
-        resultDinamos = pn.concat([resultDinamos, pn.DataFrame(array2).rename(
-            columns={item: str(int(item) + array1.shape[1]) for item in pn.DataFrame(array2).columns})], axis=1)
+        array2 = resultDinamos[resultDinamos.columns[1::2]]
+
+        meanA = np.mean(array2)
+        stdA = np.std(array2)
+        array2 -= meanA
+        array2 /= stdA
+
+        resultDinamos = pn.concat([array1, array2], axis=1)
+        cols = resultDinamos.columns.tolist()
+        cols = sorted(cols)
+        resultDinamos = resultDinamos[cols]
         resultDinamos['marker_debit'] = marker
         return resultDinamos.reset_index(drop=True)
 
@@ -272,7 +272,6 @@ class SampleAdapter(object):
         dfNew = dinamoDF.copy(True)
         start = len(dfNew) - self.minAmountPoints
         dfNew = dfNew.loc[start:]
-        dfNew.sort_index()
         dfNew = dfNew.reset_index(drop=True)
         return dfNew.copy(True)
 
@@ -296,8 +295,6 @@ class SampleAdapter(object):
                 dinamos = []
                 matchStart = debitTime['start'].timestamp()
                 matchEnd = debitTime['end'].timestamp()
-                if debitDict['start'] != datetime(2018, 2, 7, 6, 5):
-                    break
                 for dateKey in self.dictDF[well]:
                     for timeKey in self.dictDF[well][dateKey]:
                         try:
@@ -308,13 +305,13 @@ class SampleAdapter(object):
                             if diffStart > -2700 and diffStart < -900:
                                 dinamos.append(
                                     self._normalizeDinamo(self.dictDF[well][dateKey][timeKey][-1]).values.ravel())
-                                pp((well, dateKey, timeKey, "-1"))
+                                # pp((well, dateKey, timeKey, "-1"))
                             if diffStart < -2700 and diffEnd > -900:
-                                pp((well, dateKey, timeKey, "all"))
+                                # pp((well, dateKey, timeKey, "all"))
                                 dinamos += [self._normalizeDinamo(item).values.ravel() for item in
                                             self.dictDF[well][dateKey][timeKey]]
                             if diffEnd < -900 and diffEnd > -2700:
-                                pp((well, dateKey, timeKey, "0"))
+                                # pp((well, dateKey, timeKey, "0"))
                                 dinamos.append(
                                     self._normalizeDinamo(self.dictDF[well][dateKey][timeKey][0]).values.ravel())
 
@@ -331,47 +328,46 @@ class SampleAdapter(object):
                             pp((well, dateKey, timeKey))
                             raise ex
 
-                # if dinamos and len(dinamos) > 7:
-                if dinamos:
-                    print()
-                    pp(well)
-                    pp(debitTime)
-                    pp(debitTime['start'].timestamp())
-                    pp(len(dinamos))
+                if dinamos and len(dinamos) > 7:
+                # if dinamos:
+                    # print()
+                    # pp(well)
+                    # pp(debitTime)
+                    # pp(debitTime['start'].timestamp())
+                    # pp(len(dinamos))
                     df = pn.DataFrame(dinamos)
                     df['marker_debit'] = debitTime['debit'] / len(dinamos)
                     result = result.append(df)
-        input()
         resultDinamos = result.reset_index(drop=True)
-        marker = resultDinamos['marker_debit']
-        resultDinamos = resultDinamos.drop(['marker_debit'], axis=1)
-
-        array2 = resultDinamos[resultDinamos.columns[1::2]].values
-
-        meanA = np.mean(array2)
-        stdA = np.std(array2)
-        array2 -= meanA
-        array2 /= stdA
-
-        array1 = resultDinamos[resultDinamos.columns[0::2]].values
-
-        meanA = np.mean(array1)
-        stdA = np.std(array1)
-        array1 -= meanA
-        array1 /= stdA
-
-        resultDinamos = pn.DataFrame(array1)
-        resultDinamos = pn.concat([resultDinamos, pn.DataFrame(array2).rename(
-            columns={item: str(int(item) + array1.shape[1]) for item in pn.DataFrame(array2).columns})], axis=1)
-        resultDinamos['marker_debit'] = marker
-        input('stop')
+        # marker = resultDinamos['marker_debit']
+        # resultDinamos = resultDinamos.drop(['marker_debit'], axis=1)
+        #
+        # array1 = resultDinamos[resultDinamos.columns[0::2]]
+        #
+        # meanA = np.mean(array1)
+        # stdA = np.std(array1)
+        # array1 -= meanA
+        # array1 /= stdA
+        #
+        # array2 = resultDinamos[resultDinamos.columns[1::2]]
+        #
+        # meanA = np.mean(array2)
+        # stdA = np.std(array2)
+        # array2 -= meanA
+        # array2 /= stdA
+        #
+        # resultDinamos = pn.concat([array1, array2], axis=1)
+        # cols = resultDinamos.columns.tolist()
+        # cols = sorted(cols)
+        # resultDinamos = resultDinamos[cols]
+        # resultDinamos['marker_debit'] = marker
         return resultDinamos.reset_index(drop=True)
 
 
 if __name__ == "__main__":
     debitDict = toolsFile.getDebitWell()
     dictDF = toolsFile.getDinamosDebit()
-    toolsFile.saveToPickle(config.pathToPickle + "\\dinamos_debit_DICT.pickle", dictDF)
+    # toolsFile.saveToPickle(config.pathToPickle + "\\dinamos_debit_DICT.pickle", dictDF)
     # dictDF = toolsFile.openFromPickle(config.pathToPickle + "\\dinamos_debit_DICT.pickle")
     sampleAdapter = SampleAdapter(dictDF=dictDF, debitDict=debitDict)
     sample = sampleAdapter.getDebitTime()
