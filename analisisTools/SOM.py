@@ -4,9 +4,9 @@ import tensorflow as tf
 import matplotlib.pyplot as plt
 from pprint import pprint as pp
 
-from Class.Sample import SampleAdapter
+from Sample.Sample import SampleAdapter
 from config import config
-from developTools import toolsFile
+from filesTools import filesTools
 
 
 class SOMNetwork(object):
@@ -118,7 +118,7 @@ def test_som_with_color_data(data, dim):
         img2 = tf.reshape(som.w, [som_dim, som_dim, -1]).eval()
         drawSom(img2, i)
         img2 = som.w.eval()
-        toolsFile.saveToPickle(config.pathToPickle + "\\som_debit_norm_{}.pickle".format(dim), img2)
+        filesTools.saveToPickle(config.pathToPickle + "\\som_debit_norm_{}.pickle".format(dim), img2)
         return img2
 
 
@@ -159,8 +159,8 @@ if __name__ == "__main__":
 
 
     dim = 100
-    dictDF = toolsFile.openFromPickle(config.pathToPickle + "\\dinamos_debit_DICT.pickle")
-    debitDict = toolsFile.getDebitWell()
+    dictDF = filesTools.openFromPickle(config.pathToPickle + "\\dinamos_debit_DICT.pickle")
+    debitDict = filesTools.getDebitWell()
 
     sampleAdapter = SampleAdapter(dictDF=dictDF, debitDict=debitDict)
     # sample = sampleAdapter.getByWell()
@@ -175,7 +175,7 @@ if __name__ == "__main__":
     # w = test_som_with_color_data(sample.sample(len(sample)), dim)
     # sample = sample.sample(len(sample))
     # sample = sample.reset_index(drop=True)
-    w = toolsFile.openFromPickle(config.pathToPickle + "\\som_debit_norm_{}.pickle".format(dim))
+    w = filesTools.openFromPickle(config.pathToPickle + "\\som_debit_norm_{}.pickle".format(dim))
 
     # colors = {
     #     'marker_well': {

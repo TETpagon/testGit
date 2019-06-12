@@ -4,9 +4,9 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import numpy as np
 
-from Class.Sample import SampleAdapter
+from Sample.Sample import SampleAdapter
 from config import config
-from developTools import toolsFile
+from filesTools import filesTools
 
 
 def build_model(dim):
@@ -35,7 +35,7 @@ def train_model(data):
     model.fit(data, train_labels, epochs=EPOCHS, verbose=0)
 
     model.save_weights(config.pathToPickle + "\\keras_weight")
-    # toolsFile.saveToPickle(config.pathToPickle + "\\keras_model.pickle", model)
+    # filesTools.saveToPickle(config.pathToPickle + "\\keras_model.pickle", model)
 
 
 def draw_history(history):
@@ -81,8 +81,8 @@ def predict(data):
 
 
 if __name__ == "__main__":
-    debitDict = toolsFile.getDebitWell()
-    dictDF = toolsFile.openFromPickle(config.pathToPickle + "\\dinamos_debit_.pickle")
+    debitDict = filesTools.getDebitWell()
+    dictDF = filesTools.openFromPickle(config.pathToPickle + "\\dinamos_debit_.pickle")
     sampleAdapter = SampleAdapter(dictDF=dictDF, debitDict=debitDict)
     sample = sampleAdapter.getByDebitNorm()
 

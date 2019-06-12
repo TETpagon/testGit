@@ -1,10 +1,9 @@
 from sklearn.ensemble import RandomForestRegressor
-
-from Class.Sample import SampleAdapter
-from config import config
-from developTools import toolsFile
-
 import numpy as np
+
+from Sample.Sample import SampleAdapter
+from config import config
+from filesTools import filesTools
 
 
 def train_model(sample):
@@ -17,11 +16,11 @@ def train_model(sample):
     model = RandomForestRegressor(n_estimators=1000, random_state=10, n_jobs=-1)
     model.fit(train_dataset.values, train_labels.values)
 
-    toolsFile.saveToPickle(config.pathToPickle + "\\randomForest_model.pickle", model)
+    filesTools.saveToPickle(config.pathToPickle + "\\randomForest_model.pickle", model)
 
 
 def predict(data):
-    model = toolsFile.openFromPickle(config.pathToPickle + "\\randomForest_model.pickle")
+    model = filesTools.openFromPickle(config.pathToPickle + "\\randomForest_model.pickle")
     data.pop('marker_debit')
     predictions = model.predict(data.values)
 
@@ -29,8 +28,8 @@ def predict(data):
 
 
 if __name__ == "__main__":
-    debitDict = toolsFile.getDebitWell()
-    dictDF = toolsFile.openFromPickle(config.pathToPickle + "\\dinamos_debit_.pickle")
+    debitDict = filesTools.getDebitWell()
+    dictDF = filesTools.openFromPickle(config.pathToPickle + "\\dinamos_debit_.pickle")
     sampleAdapter = SampleAdapter(dictDF=dictDF, debitDict=debitDict)
     sample = sampleAdapter.getByDebitNorm()
 

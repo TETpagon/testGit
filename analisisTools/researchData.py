@@ -1,19 +1,11 @@
 import copy
-from pprint import pprint as pp
-
 import pandas as pd
-
 from scipy.cluster.hierarchy import linkage, fcluster
-
 import numpy as np
 import matplotlib.pyplot as plt
-
 from sklearn.manifold import TSNE
-
 import random
-
 from sklearn.cluster import KMeans
-
 import plotly.graph_objs as go
 import plotly
 
@@ -41,12 +33,20 @@ def TNSE(data: pd.DataFrame, marker="marker_debit"):
         Возвращает:
             pandas.DataFrame
     """
+    markers = pd.DataFrame()
+    if 'marker_well' in data.columns:
+        markers['marker_well'] = data.pop('marker_well')
+    if 'marker_state' in data.columns:
+        markers['marker_state'] = data.pop('marker_state')
+    if 'marker_debit' in data.columns:
+        markers['marker_debit'] = data.pop('marker_debit')
+    if 'class' in data.columns:
+        markers['class'] = data.pop('class')
+
     tsne = TSNE()
-    markers = data[[marker]].copy(True)
-    inputData = data.drop([marker], axis=1)
-    X_tsne = tsne.fit_transform(inputData)
+    X_tsne = tsne.fit_transform(data)
     result = pd.DataFrame(X_tsne)
-    result[marker] = markers
+    result[markers.columns] = markers
     return result
 
 
@@ -66,8 +66,12 @@ def drawSemple(sample: pd.DataFrame, path='semple.html', marker_in="marker_well"
     colors = colors / np.max(colors) * 255
     colors = np.array(colors, dtype=int)
     traces = []
-    pp(markers)
     for index, marker in enumerate(markers):
+        if marker_in == 'marker_debit':
+            color = [str(colors[index]), str(0), str(0)]
+        else:
+            color = [str(random.randint(0, 255)), str(random.randint(0, 255)), str(random.randint(0, 255))]
+
         random.seed(index * 10)
         traces.append(
             go.Scatter(
@@ -77,9 +81,7 @@ def drawSemple(sample: pd.DataFrame, path='semple.html', marker_in="marker_well"
                 mode='markers',
                 marker=dict(
                     size=10,
-                    color='rgb(' + ",".join(
-                        [str(random.randint(0, 255)), str(random.randint(0, 255)), str(random.randint(0, 255))]) + ')',
-                    # [str(colors[index]), str(0), str(0)]) + ')',
+                    color='rgb(' + ",".join(color) + ')',
                     line=dict(
                         width=2,
                         color='rgb(0, 0, 0)'
@@ -108,7 +110,6 @@ def analizeFeatureInput(featureInput, sample):
         indexes.append(np.where(array == item)[0][0])
 
     indexes = sorted(indexes)
-    pp(indexes)
     plt.plot(result, 'b')
     plt.show()
 
@@ -126,12 +127,18 @@ def analizeFeatureInput(featureInput, sample):
                 positionX.append(index - 1)
             if index not in positionY:
                 positionY.append(index)
-    pp(len(positionX))
-    pp(len(positionY))
 
     sample_loc = sample.copy(True)
 
-    marker = sample_loc.pop("marker_debit")
+    markers = pd.DataFrame()
+    if 'marker_well' in sample_loc.columns:
+        markers['marker_well'] = sample_loc.pop('marker_well')
+    if 'marker_state' in sample_loc.columns:
+        markers['marker_state'] = sample_loc.pop('marker_state')
+    if 'marker_debit' in sample_loc.columns:
+        markers['marker_debit'] = sample_loc.pop('marker_debit')
+    if 'class' in sample_loc.columns:
+        markers['class'] = sample_loc.pop('class')
 
     plt.plot(sample_loc.mean().values[1::2], sample_loc.mean().values[0::2], "b")
     plt.plot(sample_loc.mean().values[positionY], sample_loc.mean().values[positionX], "ro")
@@ -141,8 +148,15 @@ def analizeFeatureInput(featureInput, sample):
 def k_means(data: pd.DataFrame, k: int):
     test_data = data
 
-    test_data.pop('marker_well')
-    test_data.pop('marker_state')
+    markers = pd.DataFrame()
+    if 'marker_well' in data.columns:
+        markers['marker_well'] = data.pop('marker_well')
+    if 'marker_state' in data.columns:
+        markers['marker_state'] = data.pop('marker_state')
+    if 'marker_debit' in data.columns:
+        markers['marker_debit'] = data.pop('marker_debit')
+    if 'class' in data.columns:
+        markers['class'] = data.pop('class')
 
     model = KMeans(n_clusters=k, n_jobs=-1)
     model.fit(test_data)
@@ -165,38 +179,19 @@ def elbow_method_k_means(data, end: int, start: int = 1, step: int = 1):
 
 
 def tree(data: pd.DataFrame, k=10):
-    # Создаем датафрейм
     seeds_df = data
+    markers = pd.DataFrame()
+    if 'marker_well' in seeds_df.columns:
+        markers['marker_well'] = seeds_df.pop('marker_well')
+    if 'marker_state' in seeds_df.columns:
+        markers['marker_state'] = data.pop('marker_state')
+    if 'marker_debit' in seeds_df.columns:
+        markers['marker_debit'] = seeds_df.pop('marker_debit')
+    if 'class' in seeds_df.columns:
+        markers['class'] = seeds_df.pop('class')
 
-    # Исключаем информацию об образцах зерна, сохраняем для дальнейшего использования
-    varieties = list(seeds_df.pop('marker_state'))
-    varieties = list(seeds_df.pop('marker_well'))
-
-    # Извлекаем измерения как массив NumPy
     samples = seeds_df.values
-
-    # Реализация иерархической кластеризации при помощи функции linkage
     mergings = linkage(samples, method='average')
-
-    # pp(mergings)
-
-    # dendrogram(mergings, p=100, truncate_mode='lastp')
-    # plt.plot(mergings.transpose()[1])
-    # plt.show()
-
-    elbow = []
-
     groups = fcluster(mergings, k, criterion='maxclust')
-
     seeds_df['class'] = groups
     return seeds_df
-
-
-def wgss(data, groups):
-    _data = np.array(data)
-    res = 0.0
-    for cluster in groups:
-        inclust = _data[np.array(groups) == cluster]
-        meanval = np.mean(inclust, axis=0)
-        res += np.sum((inclust - meanval) ** 2)
-        return res
