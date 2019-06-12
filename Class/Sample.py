@@ -10,11 +10,14 @@ from developTools import researchData, toolsFile
 
 
 class SampleAdapter(object):
+    """
+        Класс отвечает за работу с динамограмми и дебитом
+    """
+
     def __init__(self, dictDF: dict = None, debitDict: dict = None):
         self.dictDF = dictDF
         self.debitDict = debitDict
-        self.minAmountPoints = 576
-        self.normDenamos = self._normalizeDinamos()
+        self.minAmountPoints = 576  # минимальное количество значений в динамограмме (получено экспереминтально)
 
     def getByDebit(self):
         part = 2
@@ -72,31 +75,32 @@ class SampleAdapter(object):
         return resultDebit
 
     def getByDebitNorm(self):
+        """
+            Функция возвращает динамограммы в соотвествие которым поставлен дебит
+
+            Возвращает:
+                pandas.DataFrame
+        """
         count = 0
         resultDinamos = pn.DataFrame()
         for well in self.dictDF:
             for date in self.dictDF[well]:
-                try:
-                    dinamos = []
-                    for time in self.dictDF[well][date]:
-                        dinamos += self.dictDF[well][date][time]
-                    state = True
-                    for dinamo in dinamos:
-                        if np.max(dinamo['force']) - np.min(dinamo['force']) < 10000:
-                            state = False
-                            count += 1
-                    if not state:
-                        continue
+                dinamos = []
+                for time in self.dictDF[well][date]:
+                    dinamos += self.dictDF[well][date][time]
+                state = True
+                for dinamo in dinamos:
+                    if np.max(dinamo['force']) - np.min(dinamo['force']) < 3000:
+                        state = False
+                        count += 1
+                if not state:
+                    continue
 
-                    if dinamos and self.getDebitByDate(well, date):
-                        debit = self.getDebitByDate(well, date)
-                        # df = pn.DataFrame([self._normalizeDinamosValues(self._normalizeDinamo(dinamo)).values.ravel() for dinamo in dinamos])
-                        df = pn.DataFrame([self._normalizeDinamo(dinamo).values.ravel() for dinamo in dinamos])
-                        df['marker_debit'] = debit
-                        resultDinamos = resultDinamos.append(df)
-                except Exception as ex:
-                    pp("{}   {}".format(well, date))
-                    raise ex
+                if dinamos and self.getDebitByDate(well, date):
+                    debit = self.getDebitByDate(well, date)
+                    df = pn.DataFrame([self._normalizeDinamo(dinamo).values.ravel() for dinamo in dinamos])
+                    df['marker_debit'] = debit
+                    resultDinamos = resultDinamos.append(df)
         resultDinamos = resultDinamos.reset_index(drop=True)
         marker = resultDinamos['marker_debit']
         resultDinamos = resultDinamos.drop(['marker_debit'], axis=1)
@@ -141,7 +145,9 @@ class SampleAdapter(object):
                         continue
                     if dinamos and self.getDebitByDate(well, date):
                         debit = self.getDebitByDate(well, date)
-                        df = pn.DataFrame([self._normalizeDinamosValues(self._normalizeDinamo(dinamo)).values.ravel() for dinamo in dinamos])
+                        df = pn.DataFrame(
+                            [self._normalizeDinamosValues(self._normalizeDinamo(dinamo)).values.ravel() for dinamo in
+                             dinamos])
                         # df = pn.DataFrame([self._normalizeDinamo(dinamo).values.ravel() for dinamo in dinamos])
                         df['marker_debit'] = debit
                         resultDinamos = resultDinamos.append(pn.DataFrame(df.mean()).transpose())
@@ -194,6 +200,12 @@ class SampleAdapter(object):
         return dinamosWells.reset_index(drop=True)
 
     def getByWell(self):
+        """
+            Функция возвращает динамограммы, в соответсвие котормы ставиться вышка
+
+            Возвращает:
+                pandas.DataFrame
+        """
         dinamosWells = pn.DataFrame()
         for well in self.dictDF:
             for date in self.dictDF[well]:
@@ -329,7 +341,7 @@ class SampleAdapter(object):
                             raise ex
 
                 if dinamos and len(dinamos) > 7:
-                # if dinamos:
+                    # if dinamos:
                     # print()
                     # pp(well)
                     # pp(debitTime)

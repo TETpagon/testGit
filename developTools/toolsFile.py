@@ -38,7 +38,12 @@ def saveValuesSignalToPickle(valuesSignals: dict):
 
 
 def getDinamos():
-    data = pd.DataFrame()
+    """
+        Получение значений динамограмм 
+        
+        Возвращает:
+            словарь, содержимое которого {Скважина -> Дата -> Время -> Динамогрммы}
+    """
     dinamos = {}
     dataCSV = getDinamosFromCSV()
     for well in dataCSV:
@@ -49,13 +54,7 @@ def getDinamos():
                 df = dataCSV[well][date][time]
                 if df.dtypes["force" and "position"] != 'object':
                     dinamosValues = getDinamosValues(df)
-                    for dinamo in dinamosValues:
-                        data = data.append(pd.DataFrame(dinamo.values.reshape(-1))[:1154].transpose())
-                        # pp(data.describe(include='all'))
-                        # input('step')
                     dinamos[well][date][time] = dinamosValues
-    # nans = data.loc[:, data.isnull().any()].copy()
-    pp(len(data))
     return dinamos
 
 
@@ -75,6 +74,12 @@ def getDinamosDebit():
 
 
 def getDinamosValues(df: pd.DataFrame):
+    """
+        Функция среди данных выбирает только нужные значения динаммограмм 
+        
+        Возвращает:
+            Список динамограмм
+    """
     newDF = df.loc[~df['force'].isnull()].reset_index()
     newDF = newDF[['index', 'force', 'position']]
     indexes = list(newDF[newDF["index"].notnull()].index)
@@ -88,6 +93,15 @@ def getDinamosValues(df: pd.DataFrame):
 
 
 def getDinamosFromCSV(path=config.pathToDirOilsWell):
+    """
+        Фнукция чтения данных из файла CSV
+        
+        Параметры:
+            path - путь, по  которму лежит файл
+        
+        Вовращает:
+            словарь, содержимое которого которого {Скважина -> Дата -> Время -> динамограммы} 
+    """
     data = {}
     for dirOilWell in os.listdir(path):
         data[dirOilWell] = {}
@@ -116,7 +130,13 @@ def getDinamosFromCSV(path=config.pathToDirOilsWell):
     return data
 
 
-def getDebitWell():
+def getDebitWell() -> dict:
+    """
+        Функция получения данных о дебите.
+        
+        Вовращает:
+            словарь, содержимое которого данные о дебите по каждой вышке
+    """
     data = {}
     contentsExele = getDebitFromXML()
     for well in contentsExele:
@@ -129,6 +149,12 @@ def getDebitWell():
 
 
 def getDebitFromXML():
+    """
+        Чтение данных о дебите из файла Excel
+        
+        Возвращает:
+            словарь с данными о дебите по каждой вышке
+    """
     pathToDebit = {"Скважина 15795": config.pathToDebit_15795, "Скважина 18073": config.pathToDebit_18073,
                    "Скважина 30065": config.pathToDebit_30065}
     data = {}
@@ -143,11 +169,27 @@ def getListFile(path):
 
 
 def saveToPickle(path, data):
+    """
+        Функция сохраняет данные на диске в формате pickle
+        
+        Параметры:
+            path - путь, по которму сохраняются данные
+            data - данные для сохранения
+    """
     with open(path, "wb") as wr:
         pickle.dump(data, wr)
 
 
 def openFromPickle(path):
+    """
+        Функция загружает данные из файла pickle
+        
+        Параметры: 
+            path - путь, по кторому данные лежат
+        
+        Возвращает: 
+            данные
+    """
     with open(path, "rb") as r:
         data = pickle.load(r)
     return data
