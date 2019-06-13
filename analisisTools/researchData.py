@@ -18,6 +18,8 @@ def drawDinamo(dinamo: pd.DataFrame):
             dinamo: значения динамограммы
     """
     array = dinamo.values
+    plt.xlabel(u'Смещение')
+    plt.ylabel(u'Сила')
     plt.plot(array[1::2], array[0:-1:2], 'b')
     plt.show()
 
@@ -169,12 +171,23 @@ def k_means(data: pd.DataFrame, k: int):
 def elbow_method_k_means(data, end: int, start: int = 1, step: int = 1):
     X = []
     Y = []
+    markers = pd.DataFrame()
+    if 'marker_well' in data.columns:
+        markers['marker_well'] = data.pop('marker_well')
+    if 'marker_state' in data.columns:
+        markers['marker_state'] = data.pop('marker_state')
+    if 'marker_debit' in data.columns:
+        markers['marker_debit'] = data.pop('marker_debit')
+    if 'class' in data.columns:
+        markers['class'] = data.pop('class')
     for k in range(start, end, step):
         model = KMeans(n_clusters=k, n_jobs=-1)
         model.fit(data)
         X.append(k)
         Y.append(model.inertia_)
     plt.plot(X, Y, 'b')
+    plt.xlabel(u'Внутрекластерный разброс')
+    plt.ylabel(u'Количество кластеров')
     plt.show()
 
 
@@ -184,7 +197,7 @@ def tree(data: pd.DataFrame, k=10):
     if 'marker_well' in seeds_df.columns:
         markers['marker_well'] = seeds_df.pop('marker_well')
     if 'marker_state' in seeds_df.columns:
-        markers['marker_state'] = data.pop('marker_state')
+        markers['marker_state'] = seeds_df.pop('marker_state')
     if 'marker_debit' in seeds_df.columns:
         markers['marker_debit'] = seeds_df.pop('marker_debit')
     if 'class' in seeds_df.columns:
